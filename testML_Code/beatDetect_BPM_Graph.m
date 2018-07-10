@@ -1,3 +1,54 @@
+
+%   Created:    Isaiah Gaspar           07/08/19
+%
+%   Last Modified:  Isaiah Gaspar       07/09/19
+% 
+% 
+%   Purpose:
+%
+%            The goal of this script is to pull data from excel
+%            and be able to graph, beat detect, and accuratley 
+%            calculate BPM. In addition to offering ease of use
+%            for different devices and data sets that may vary
+%            in length and sampled data may even vary drastically
+%            in amplitude.
+%
+%   To-Use: 
+%
+%           To use you first need to edit/update where to read raw data
+%           with the xlsread functions listed.
+%           After this is determined time_LAB, TDK, and IWRX (Three DUT)
+%           are arrays that contain the minutes that you want to further
+%           evaluate. 
+% 
+%           Verifying in your raw data, I determined the number of rows
+%           until a minute has been reached. For instance, the TDK raw
+%           data takes approximatley 30000 samples (rows of data) before
+%           the first minute is reached. Using this algebra I am determining
+%           low and high range of my soon-to-be partitioned data.
+% 
+%           Using these new sections of data I am using a very simple method
+%           for beat detection in the nested if statement. This works
+%           by comparing previous and next samples to determine where the 
+%           true max/peak/beat value occurs. Since data sets are already
+%           brooken down into minute intervals, simply counting the samples
+%           that meet this condition provides BPM which I am saving
+%           into a single matrix for all three devices for later comparison.
+%             
+%  Potential Issues:
+%
+%           If the minutes requested is not in the origianlly
+%           imported data set there will be an idex error when 
+%           determinng bpm. Also all devices seem to operate at
+%           within different ranges so each if statement was determined
+%           by first graphing the data set with samples marked
+%           and determining the best way of dealing with a potentially
+%           odd PQRS complex.
+% 
+% 
+% 
+
+
 %% 
 %Read data into workspace
 DataLAB_1 = xlsread('Subject_1_ECG_TEMP.xlsx','Lab_ECG','A1:C721950'); %msec, min, ecg
@@ -6,7 +57,7 @@ DataIWRX_1 = xlsread('Subject_1_ECG_TEMP.xlsx','iWorx_ECG','A1:C722855'); %sec, 
 
 %% 
 %  3 6 9 14 20 31 38 44 50 
-time_LAB = [ 3 6 9 14 20 31 38 44 50]; %minutes that we want to evaluate
+time_LAB = [ 3 6 9 14 20 31 38 44 50]; %%minutes that we want to evaluate
 time_TDK = [3 6 9 14 20 31];
 time_IWRX = [3 6 9 14 20 31 38 44 50];
 
@@ -95,7 +146,7 @@ for k = 1 : length(lowTDK_1) %length of time so this script can scale to a large
    
     for n = 7 : length(y)-10 
         
-        if((y(n) > y(n-1)) && (y(n) > y(n+1)) && (y(n) > y(n-6)) && (y(n) > y(n+10)) && (y(n) > 550) && (y(n) < 900))
+        if((y(n) > y(n-1)) && (y(n) > y(n+1)) && (y(n) > y(n-6)+50) && (y(n) > y(n+10)+150) && (y(n) > 550) && (y(n) < 900))
             
             beat_count = beat_count + 1;
             bpm = bpm + 1;
@@ -112,7 +163,7 @@ for k = 1 : length(lowTDK_1) %length of time so this script can scale to a large
 
     end
 
-    plot(x,y, '-o')
+    plot(x,y,'-o')
     hold on
     
     k = k + 1;
@@ -132,21 +183,21 @@ for k = 1 : length(lowIWRX_1) %length of time so this script can scale to a larg
     l = lowIWRX_1(k); %setting initial time value, start of the minute we are evaluating
     h = highIWRX_1(k); %setting final time value, end of the minute we are evaluating
     
-    x = DataIWRX_1(l:h,1); %Full range of x data (time)
-    y = DataIWRX_1(l:h,2); %Full range of y data (electical activity
+    x = DataIWRX_1(l:h,1)/60; %Full range of x data (time)
+    y = DataIWRX_1(l:h,2)*100; %Full range of y data (electical activity)
     
     bpm = 0; %Reset bpm for every minute under evaluation
    
-    for n = 7 : length(y)-10 
+    for n = 6 : length(y)-3 
         
-        if((y(n) > y(n-1)) && (y(n) > y(n+1))  && (y(n) > y(n-6)*2) && (y(n) > y(n+10)*2))
+        if((y(n) > y(n-1)) && (y(n) > y(n+1)) && (y(n) > y(n-5)+.015) && (y(n) > y(n+3)+ .025) && (y(n) > 0))
             
             beat_count = beat_count + 1;
             bpm = bpm + 1;
 
             time = DataIWRX_1(n,1); %Convert from seconds to minutes?
             elect_actv = DataIWRX_1(n,2);
-
+            
             res_DataIWRX_1(beat_count,1) = n; 
             res_DataIWRX_1(beat_count,2) = time;
             res_DataIWRX_1(beat_count,3) = elect_actv;
